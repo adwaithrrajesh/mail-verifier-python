@@ -1,0 +1,67 @@
+services:
+  email-finder:
+    build: .
+    container_name: mailscout-email-finder
+    ports:
+      - "8008:8008"
+    environment:
+      # Performance tuning
+      - SMTP_TIMEOUT=10
+      - NUM_THREADS=20
+      - BATCH_SIZE=50
+      
+      # Optional: Add any other environment variables you need
+      # - FLASK_ENV=production
+      # - LOG_LEVEL=INFO
+    
+    # Resource limits for better performance
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 1G
+        reservations:
+          cpus: '1.0'
+          memory: 512M
+    
+    # Restart policy
+    restart: unless-stopped
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8008/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    
+    # Network configuration
+    networks:
+      - email-finder-network
+
+  # Optional: Add a reverse proxy (nginx) for production
+  nginx:
+    image: nginx:alpine
+    container_name: mailscout-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro  # Add SSL certificates here if needed
+    depends_on:
+      - email-finder
+    networks:
+      - email-finder-network
+    restart: unless-stopped
+    profiles:
+      - production  # Only start with --profile production
+
+networks:
+  email-finder-network:
+    driver: bridge
+
+volumes:
+  # Add any persistent volumes here if needed
+  logs:
+    driver: local
