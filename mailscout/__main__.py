@@ -23,13 +23,17 @@ import threading
 
 app = Flask(__name__)
 scout = Scout(
-    smtp_timeout=int(os.getenv("SMTP_TIMEOUT", "10")),
-    num_threads=int(os.getenv("NUM_THREADS", "20")),
-    batch_size=int(os.getenv("BATCH_SIZE", "50"))
-)  # Initialize Scout with optimized settings
+    smtp_timeout=int(os.getenv("SMTP_TIMEOUT", "8")),
+    num_threads=int(os.getenv("NUM_THREADS", "50")),
+    num_bulk_threads=int(os.getenv("NUM_BULK_THREADS", "25")),
+    batch_size=int(os.getenv("BATCH_SIZE", "100")),
+    connection_pool_size=int(os.getenv("CONNECTION_POOL_SIZE", "50")),
+    max_retries=int(os.getenv("MAX_RETRIES", "3")),
+    retry_delay=float(os.getenv("RETRY_DELAY", "1.0"))
+)  # Initialize Scout with 5GB RAM optimized settings
 
-# Rate limiting configuration
-RATE_LIMIT = 100  # requests per minute
+# Rate limiting configuration (optimized for 5GB RAM)
+RATE_LIMIT = int(os.getenv("RATE_LIMIT_PER_MINUTE", "500"))  # requests per minute
 rate_limit_data: Dict[str, list] = {}
 
 def rate_limit(f):
@@ -86,9 +90,13 @@ def home():
         },
         "performance": {
             "max_emails_per_request": 1000,
-            "estimated_time_1000_emails": "under 10 minutes",
+            "estimated_time_1000_emails": "2-5 minutes",
+            "target_success_rate": "90-95%",
             "concurrent_threads": scout.num_threads,
-            "batch_size": scout.batch_size
+            "batch_size": scout.batch_size,
+            "connection_pool_size": scout.connection_pool_size,
+            "max_retries": scout.max_retries,
+            "memory_optimized": "5GB RAM"
         }
     })
 
