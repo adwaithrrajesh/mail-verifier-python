@@ -13,6 +13,29 @@ import socket
 from functools import lru_cache
 import queue
 
+# Force IPv4 for SMTP connections to avoid IPv6 network unreachable errors
+class SMTP_IPv4(smtplib.SMTP):
+    def _get_socket(self, host, port, timeout):
+        # Force IPv4 by using AF_INET
+        new_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        new_socket.settimeout(timeout)
+        if self.source_address:
+            new_socket.bind(self.source_address)
+        new_socket.connect((host, port))
+        return new_socket
+
+class SMTP_SSL_IPv4(smtplib.SMTP_SSL):
+    def _get_socket(self, host, port, timeout):
+        # Force IPv4 by using AF_INET
+        new_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        new_socket.settimeout(timeout)
+        if self.source_address:
+            new_socket.bind(self.source_address)
+        new_socket.connect((host, port))
+        new_socket = self._context.wrap_socket(new_socket, server_hostname=host)
+        return new_socket
+
+
 
 class Scout:
     def __init__(
@@ -39,6 +62,7 @@ class Scout:
         self.batch_size = batch_size
         self.max_retries = max_retries
         self.retry_delay = retry_delay
+        self.connection_pool_size = connection_pool_size
         
         # Performance optimization attributes
         self.mx_cache = {}  # DNS cache for MX records
@@ -112,9 +136,9 @@ class Scout:
             
             # Create new connection
             if port == 465:
-                server = smtplib.SMTP_SSL(mx_host, port, timeout=self.smtp_timeout)
+                server = SMTP_SSL_IPv4(mx_host, port, timeout=self.smtp_timeout)
             else:
-                server = smtplib.SMTP(mx_host, port, timeout=self.smtp_timeout)
+                server = SMTP_IPv4(mx_host, port, timeout=self.smtp_timeout)
             
             return server
         except Exception as e:
@@ -210,9 +234,9 @@ class Scout:
                             if not server:
                                 # Create new connection if pool is empty
                                 if smtp_port == 465:
-                                    server = smtplib.SMTP_SSL(mx, smtp_port, timeout=self.smtp_timeout)
+                                    server = SMTP_SSL_IPv4(mx, smtp_port, timeout=self.smtp_timeout)
                                 else:
-                                    server = smtplib.SMTP(mx, smtp_port, timeout=self.smtp_timeout)
+                                    server = SMTP_IPv4(mx, smtp_port, timeout=self.smtp_timeout)
                             
                             connections += 1
                             server.set_debuglevel(0)
@@ -387,9 +411,9 @@ class Scout:
             try:
                 # Use SMTP_SSL for port 465, regular SMTP for others
                 if smtp_port == 465:
-                    server = smtplib.SMTP_SSL(mx_record, smtp_port, timeout=self.smtp_timeout)
+                    server = SMTP_SSL_IPv4(mx_record, smtp_port, timeout=self.smtp_timeout)
                 else:
-                    server = smtplib.SMTP(mx_record, smtp_port, timeout=self.smtp_timeout)
+                    server = SMTP_IPv4(mx_record, smtp_port, timeout=self.smtp_timeout)
                 
                 with server as smtp_server:
                     smtp_server.set_debuglevel(0)

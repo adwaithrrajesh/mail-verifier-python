@@ -1,0 +1,21 @@
+services:
+  email-finder:
+    build: .
+    container_name: mailscout-email-finder
+    network_mode: host  # Use host network to bypass Docker network isolation
+    environment:
+      # Performance tuning
+      - SMTP_TIMEOUT=10
+      - NUM_THREADS=20
+      - BATCH_SIZE=50
+    
+    # Restart policy
+    restart: unless-stopped
+    
+    # Health check (using localhost since we're on host network)
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8008/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s

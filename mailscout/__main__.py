@@ -293,3 +293,49 @@ def internal_error(error):
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8008)
+
+# Add test mode endpoint for demo purposes when SMTP is blocked
+@app.route('/verify-bulk-mock', methods=['POST'])
+def verify_bulk_mock():
+    """Mock endpoint for testing when SMTP ports are blocked"""
+    data = request.get_json()
+    
+    if not data or 'emails' not in data:
+        return jsonify({"error": "Missing 'emails' field"}), 400
+    
+    emails = data['emails']
+    
+    # Mock results for demonstration
+    results = []
+    for email in emails:
+        domain = email.split('@')[1] if '@' in email else 'unknown'
+        
+        # Simulate realistic responses
+        if 'gmail.com' in domain or 'hotmail.com' in domain:
+            status = "risky"  # Gmail/Hotmail often have catch-all
+            message = "Catch-all domain detected"
+        else:
+            status = "valid"
+            message = "Email appears valid"
+        
+        results.append({
+            "email": email,
+            "status": status,
+            "catch_all": 'gmail.com' in domain or 'hotmail.com' in domain,
+            "message": message,
+            "domain": domain,
+            "note": "MOCK RESPONSE - SMTP ports blocked on server"
+        })
+    
+    return jsonify({
+        "success": True,
+        "summary": {
+            "total": len(emails),
+            "valid": sum(1 for r in results if r['status'] == 'valid'),
+            "risky": sum(1 for r in results if r['status'] == 'risky'),
+            "invalid": 0,
+            "unknown": 0
+        },
+        "results": results,
+        "warning": "This is a MOCK response. SMTP ports (25,587,465) are blocked. See UNBLOCK_SMTP_GUIDE.md"
+    })
