@@ -26,7 +26,7 @@ fi
 
 # Run the mailscout module
 echo "Starting MailScout server..."
-echo "Server will be available at: http://127.0.0.1:8008"
+echo "Server will be available at: http://127.0.0.1:9080"
 echo "Press Ctrl+C to stop the server"
 echo ""
 

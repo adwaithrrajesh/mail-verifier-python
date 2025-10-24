@@ -292,7 +292,7 @@ def internal_error(error):
     return jsonify({"error": "Internal server error"}), 500
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8008)
+    app.run(host="0.0.0.0", port=9080)
 
 # Add test mode endpoint for demo purposes when SMTP is blocked
 @app.route('/verify-bulk-mock', methods=['POST'])

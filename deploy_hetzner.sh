@@ -17,7 +17,7 @@ NC='\033[0m' # No Color
 
 # Configuration
 APP_NAME="mailscout"
-APP_PORT=8008
+APP_PORT=9080
 PYTHON_VERSION="3.11"
 VENV_NAME="venv"
 LOG_FILE="/var/log/mailscout.log"
@@ -254,7 +254,7 @@ python hetzner_config.py
 echo "🎯 Target Success Rate: 90-95%"
 echo "⚡ Expected Performance: 5-10 emails/second"
 echo "💾 Memory Usage: ~4GB (optimized for 5GB RAM)"
-echo "🌐 Server: http://0.0.0.0:8008"
+echo "🌐 Server: http://0.0.0.0:9080"
 echo ""
 
 # Start the application
@@ -269,7 +269,7 @@ sudo -u "$USER_NAME" tee "$APP_DIR/health_check.sh" > /dev/null <<'EOF'
 #!/bin/bash
 
 # MailScout Health Check Script
-APP_PORT=8008
+APP_PORT=9080
 HEALTH_URL="http://localhost:$APP_PORT/stats"
 
 # Check if service is running
@@ -312,7 +312,7 @@ echo ""
 
 # Get performance stats
 echo "📈 Performance Statistics:"
-curl -s http://localhost:8008/stats | python3 -m json.tool
+curl -s http://localhost:9080/stats | python3 -m json.tool
 echo ""
 
 # Get system resources
@@ -326,7 +326,7 @@ echo ""
 
 # Get network connections
 echo "🌐 Network Connections:"
-netstat -tlnp | grep :8008
+netstat -tlnp | grep :9080
 echo ""
 
 # Get recent logs

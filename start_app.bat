@@ -1,10 +1,10 @@
 @echo off
 REM Email Finder Application Startup Script for Windows
-REM This script starts the Flask application on port 8008
+REM This script starts the Flask application on port 9080
 
 echo 🚀 Starting Email Finder Application...
-echo 📍 Port: 8008
-echo 🌐 Access: http://localhost:8008
+echo 📍 Port: 9080
+echo 🌐 Access: http://localhost:9080
 echo.
 
 REM Check if virtual environment exists

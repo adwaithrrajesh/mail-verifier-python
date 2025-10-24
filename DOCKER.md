@@ -21,9 +21,9 @@ This guide explains how to run the Email Finder application using Docker and Doc
    ```
 
 3. **Access the API:**
-   - API Info: http://localhost:8008/
-   - Bulk Verification: http://localhost:8008/verify-bulk
-   - Performance Stats: http://localhost:8008/stats
+   - API Info: http://localhost:9080/
+   - Bulk Verification: http://localhost:9080/verify-bulk
+   - Performance Stats: http://localhost:9080/stats
 
 ## 📋 Available Commands
 
@@ -94,14 +94,14 @@ docker-compose --profile monitoring up -d
 ## 🌐 Network Configuration
 
 The application runs on:
-- **Port 8008**: Main API endpoint
+- **Port 9080**: Main API endpoint
 - **Port 80/443**: Nginx reverse proxy (with --profile production)
 
 ### External Access
 To access from other machines:
 ```bash
 # Allow external connections
-docker-compose up -d -p 0.0.0.0:8008:8008
+docker-compose up -d -p 0.0.0.0:9080:9080
 ```
 
 ## 🔍 Troubleshooting
@@ -115,7 +115,7 @@ docker-compose ps
 docker-compose logs email-finder
 
 # Check health
-curl http://localhost:8008/
+curl http://localhost:9080/
 ```
 
 ### Common Issues
@@ -124,7 +124,7 @@ curl http://localhost:8008/
    ```bash
    # Change port in docker-compose.yml
    ports:
-     - "8009:8008"  # Use port 8009 instead
+     - "8009:9080"  # Use port 8009 instead
    ```
 
 2. **SMTP blocked (local development):**
@@ -173,21 +173,21 @@ docker-compose --profile production up -d
 
 ### Single Email Verification
 ```bash
-curl -X POST http://localhost:8008/verify \
+curl -X POST http://localhost:9080/verify \
   -H "Content-Type: application/json" \
   -d '{"email": "test@gmail.com"}'
 ```
 
 ### Bulk Verification (1000 emails)
 ```bash
-curl -X POST http://localhost:8008/verify-bulk \
+curl -X POST http://localhost:9080/verify-bulk \
   -H "Content-Type: application/json" \
   -d '{"emails": ["email1@domain.com", "email2@domain.com", ...]}'
 ```
 
 ### Performance Stats
 ```bash
-curl http://localhost:8008/stats
+curl http://localhost:9080/stats
 ```
 
 ## 🛠️ Development
@@ -198,7 +198,7 @@ curl http://localhost:8008/stats
 docker-compose -f docker-compose.dev.yml up
 
 # Or use bind mounts
-docker run -v $(pwd):/app -p 8008:8008 mailscout-email-finder
+docker run -v $(pwd):/app -p 9080:9080 mailscout-email-finder
 ```
 
 ### Building Custom Image
@@ -207,5 +207,5 @@ docker run -v $(pwd):/app -p 8008:8008 mailscout-email-finder
 docker build -t my-email-finder .
 
 # Run custom image
-docker run -p 8008:8008 my-email-finder
+docker run -p 9080:9080 my-email-finder
 ```

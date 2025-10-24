@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Email Finder Application Runner
-Simple script to start the Flask application on port 8008
+Simple script to start the Flask application on port 9080
 """
 
 import os
@@ -11,8 +11,8 @@ from pathlib import Path
 
 def main():
     print("🚀 Starting Email Finder Application...")
-    print("📍 Port: 8008")
-    print("🌐 Access: http://localhost:8008")
+    print("📍 Port: 9080")
+    print("🌐 Access: http://localhost:9080")
     print()
     
     # Get the directory where this script is located

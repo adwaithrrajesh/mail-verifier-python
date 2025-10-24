@@ -31,11 +31,11 @@ RUN useradd --create-home --shell /bin/bash app \
 USER app
 
 # Expose port
-EXPOSE 8008
+EXPOSE 9080
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8008/ || exit 1
+    CMD curl -f http://localhost:9080/ || exit 1
 
 # Run the application
 CMD ["python", "-m", "mailscout"]

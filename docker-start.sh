@@ -17,8 +17,8 @@ if ! command -v docker-compose &> /dev/null; then
 fi
 
 echo "🔧 Building and starting containers..."
-echo "📍 Port: 8008"
-echo "🌐 Access: http://localhost:8008"
+echo "📍 Port: 9080"
+echo "🌐 Access: http://localhost:9080"
 echo ""
 
 # Build and start the application
@@ -29,14 +29,14 @@ echo "⏳ Waiting for the service to be ready..."
 sleep 10
 
 # Check if the service is running
-if curl -s http://localhost:8008/ > /dev/null; then
+if curl -s http://localhost:9080/ > /dev/null; then
     echo "✅ Email Finder is running successfully!"
     echo ""
     echo "🚀 Available endpoints:"
-    echo "   - http://localhost:8008/ (API info)"
-    echo "   - http://localhost:8008/verify (single email verification)"
-    echo "   - http://localhost:8008/verify-bulk (bulk verification up to 1000 emails)"
-    echo "   - http://localhost:8008/stats (performance statistics)"
+    echo "   - http://localhost:9080/ (API info)"
+    echo "   - http://localhost:9080/verify (single email verification)"
+    echo "   - http://localhost:9080/verify-bulk (bulk verification up to 1000 emails)"
+    echo "   - http://localhost:9080/stats (performance statistics)"
     echo ""
     echo "📊 To view logs: docker-compose logs -f"
     echo "🛑 To stop: docker-compose down"

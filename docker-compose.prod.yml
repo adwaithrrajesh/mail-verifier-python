@@ -3,7 +3,7 @@ services:
     build: .
     container_name: mailscout-email-finder-prod
     ports:
-      - "8008:8008"
+      - "9080:9080"
     environment:
       # Production settings
       - SMTP_TIMEOUT=15
@@ -21,7 +21,7 @@ services:
           memory: 1G
     restart: always
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8008/"]
+      test: ["CMD", "curl", "-f", "http://localhost:9080/"]
       interval: 30s
       timeout: 10s
       retries: 3

@@ -40,7 +40,7 @@ export RATE_LIMIT_PER_MINUTE=500
 
 # Run the mailscout module with Hetzner optimizations
 echo "Starting MailScout server with Hetzner optimizations..."
-echo "Server will be available at: http://0.0.0.0:8008"
+echo "Server will be available at: http://0.0.0.0:9080"
 echo "Expected performance: 5-10 emails/second (1000 emails in 2-5 minutes)"
 echo "Target success rate: 90-95%"
 echo "Memory usage: ~4GB (optimized for 5GB RAM)"

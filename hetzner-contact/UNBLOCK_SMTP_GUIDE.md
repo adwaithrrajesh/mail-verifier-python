@@ -48,5 +48,5 @@ If you need immediate access:
 timeout 3 bash -c 'cat < /dev/null > /dev/tcp/gmail-smtp-in.l.google.com/587' && echo "✅ Port 587 OPEN" || echo "❌ Still blocked"
 
 # Or use the diagnostics endpoint
-curl "http://localhost:8008/diagnostics/smtp?host=gmail-smtp-in.l.google.com&port=587"
+curl "http://localhost:9080/diagnostics/smtp?host=gmail-smtp-in.l.google.com&port=587"
 ```

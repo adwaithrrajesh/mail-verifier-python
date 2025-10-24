@@ -1,11 +1,11 @@
 #!/bin/bash
 
 # Email Finder Application Startup Script
-# This script starts the Flask application on port 8008
+# This script starts the Flask application on port 9080
 
 echo "🚀 Starting Email Finder Application..."
-echo "📍 Port: 8008"
-echo "🌐 Access: http://localhost:8008"
+echo "📍 Port: 9080"
+echo "🌐 Access: http://localhost:9080"
 echo ""
 
 # Check if virtual environment exists

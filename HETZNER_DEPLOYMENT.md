@@ -57,7 +57,7 @@ chmod +x deploy_hetzner.sh
 
 ### Port Configuration
 
-- **Port 8008**: Main API service
+- **Port 9080**: Main API service
 - **Port 587**: SMTP (primary, works on Hetzner)
 - **Port 465**: SMTP SSL (may be blocked)
 - **Port 25**: SMTP (may be blocked by Hetzner)
@@ -93,7 +93,7 @@ sudo journalctl -u mailscout -f
 /opt/mailscout/health_check.sh
 
 # Check API status
-curl http://localhost:8008/stats
+curl http://localhost:9080/stats
 ```
 
 ## 📊 Performance Expectations
@@ -128,17 +128,17 @@ curl http://localhost:8008/stats
 
 ```bash
 # Single email verification
-curl -X POST http://your-server:8008/verify \
+curl -X POST http://your-server:9080/verify \
   -H "Content-Type: application/json" \
   -d '{"email": "test@example.com"}'
 
 # Bulk verification
-curl -X POST http://your-server:8008/verify-bulk \
+curl -X POST http://your-server:9080/verify-bulk \
   -H "Content-Type: application/json" \
   -d '{"emails": ["email1@domain.com", "email2@domain.com"]}'
 
 # Find emails for domain
-curl -X POST http://your-server:8008/find \
+curl -X POST http://your-server:9080/find \
   -H "Content-Type: application/json" \
   -d '{"domain": "example.com", "names": ["John", "Doe"]}'
 ```
@@ -153,7 +153,7 @@ curl -X POST http://your-server:8008/find \
 sudo journalctl -u mailscout -n 50
 
 # Check if port is in use
-sudo netstat -tlnp | grep 8008
+sudo netstat -tlnp | grep 9080
 
 # Restart service
 sudo systemctl restart mailscout
@@ -162,7 +162,7 @@ sudo systemctl restart mailscout
 #### 2. Low Success Rate
 ```bash
 # Check SMTP connectivity
-curl "http://localhost:8008/diagnostics/smtp?host=aspmx.l.google.com&port=587"
+curl "http://localhost:9080/diagnostics/smtp?host=aspmx.l.google.com&port=587"
 
 # Check if ports are blocked
 telnet aspmx.l.google.com 587
@@ -250,7 +250,7 @@ server {
     server_name your-domain.com;
     
     location / {
-        proxy_pass http://localhost:8008;
+        proxy_pass http://localhost:9080;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -266,7 +266,7 @@ server {
 1. **Check logs** first: `sudo journalctl -u mailscout -f`
 2. **Run health check**: `/opt/mailscout/health_check.sh`
 3. **Check system resources**: `htop`, `free -h`
-4. **Test API endpoints**: `curl http://localhost:8008/stats`
+4. **Test API endpoints**: `curl http://localhost:9080/stats`
 
 ### Performance Issues
 

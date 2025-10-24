@@ -14,7 +14,7 @@ services:
     
     # Health check (using localhost since we're on host network)
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8008/"]
+      test: ["CMD", "curl", "-f", "http://localhost:9080/"]
       interval: 30s
       timeout: 10s
       retries: 3

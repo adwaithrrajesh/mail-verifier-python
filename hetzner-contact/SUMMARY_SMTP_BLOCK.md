@@ -73,10 +73,10 @@ timeout 3 bash -c 'cat < /dev/null > /dev/tcp/gmail-smtp-in.l.google.com/587' \
   && echo "✅ UNBLOCKED" || echo "❌ Still blocked"
 
 # Test API
-curl "http://localhost:8008/diagnostics/smtp?host=gmail-smtp-in.l.google.com&port=587"
+curl "http://localhost:9080/diagnostics/smtp?host=gmail-smtp-in.l.google.com&port=587"
 
 # Test bulk verification
-curl -X POST http://localhost:8008/verify-bulk \
+curl -X POST http://localhost:9080/verify-bulk \
   -H "Content-Type: application/json" \
   -d '{"emails": ["test@gmail.com", "test@hotmail.com"]}'
 ```
