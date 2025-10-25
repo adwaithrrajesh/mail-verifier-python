@@ -5,24 +5,24 @@ services:
     ports:
       - "9080:9080"
     environment:
-      # Performance tuning
-      - SMTP_TIMEOUT=10
-      - NUM_THREADS=20
-      - BATCH_SIZE=50
+      # Optimized performance settings for 1000 emails in ~1000 seconds
+      - SMTP_TIMEOUT=2              # Fast timeout (was 10)
+      - NUM_THREADS=100             # High parallelism (was 20)
+      - NUM_BULK_THREADS=50         # Bulk thread pool (was 25)
+      - BATCH_SIZE=100              # Process 100 at a time
+      - CONNECTION_POOL_SIZE=100    # Large connection pool
+      - MAX_RETRIES=1               # Minimal retries (was 3)
+      - RETRY_DELAY=0.5             # Fast retry
       
-      # Optional: Add any other environment variables you need
-      # - FLASK_ENV=production
-      # - LOG_LEVEL=INFO
-    
-    # Resource limits for better performance
+    # Resource limits optimized for high throughput
     deploy:
       resources:
         limits:
+          cpus: '4.0'               # More CPU for parallelism
+          memory: 2G                # More memory for connections
+        reservations:
           cpus: '2.0'
           memory: 1G
-        reservations:
-          cpus: '1.0'
-          memory: 512M
     
     # Restart policy
     restart: unless-stopped

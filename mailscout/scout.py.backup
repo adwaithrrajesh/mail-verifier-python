@@ -42,14 +42,14 @@ class Scout:
         self,
         check_variants: bool = True,
         check_prefixes: bool = True,
-        check_catchall: bool = False,
+        check_catchall: bool = True,
         normalize: bool = True,
         num_threads: int = 50,  # Optimized for 5GB RAM
         num_bulk_threads: int = 25,  # Optimized for 5GB RAM
-        smtp_timeout: int = 2,  # Increased timeout for better success rate
+        smtp_timeout: int = 8,  # Increased timeout for better success rate
         batch_size: int = 100,  # Larger batches for better throughput
         connection_pool_size: int = 50,  # Larger pool for 5GB RAM
-        max_retries: int = 1,  # Retry failed connections
+        max_retries: int = 3,  # Retry failed connections
         retry_delay: float = 1.0  # Base retry delay
     ) -> None:
         self.check_variants = check_variants
@@ -86,37 +86,6 @@ class Scout:
             'circuit_breaker_hits': 0,
             'connection_reuses': 0
         }
-
-    def get_optimal_smtp_port(self, domain: str) -> list:
-        """Get optimal SMTP port order based on domain for faster verification"""
-        # Gmail and Google Workspace work best with port 25
-        if domain.endswith(('gmail.com', 'googlemail.com', 'google.com')):
-            return [25]  # Only try 25 for Gmail
-        # Outlook/Hotmail/Microsoft only work on port 25 for verification
-        elif domain.endswith(('outlook.com', 'hotmail.com', 'live.com', 'msn.com', 'protection.outlook.com')):
-            return [25]  # Only try 25 for Microsoft
-        # Yahoo typically uses port 25
-        elif domain.endswith(('yahoo.com', 'ymail.com', 'rocketmail.com')):
-            return [25, 587]
-        # Default: Try 587 first (most common for business), then 25
-        return [587, 25]
-
-
-    def get_optimal_port_for_mx(self, mx_host: str) -> list:
-        """Get optimal SMTP port based on MX hostname"""
-        mx_lower = mx_host.lower()
-        # Google MX servers
-        if 'google' in mx_lower or 'gmail' in mx_lower:
-            return [25]
-        # Microsoft MX servers
-        elif 'outlook' in mx_lower or 'protection.outlook' in mx_lower or 'hotmail' in mx_lower:
-            return [25]
-        # Yahoo MX servers
-        elif 'yahoo' in mx_lower or 'yahoodns' in mx_lower:
-            return [25]
-        # Default
-        return [587, 25]
-
 
     def get_mx_records_cached(self, domain: str) -> tuple:
         """Optimized MX record lookup with proper caching"""
@@ -246,13 +215,10 @@ class Scout:
                 return self._create_error_response(email, domain, "No MX records found", start_time)
 
             # Optimized port order for Hetzner (587 first, then 465, then 25)
-            # Port selection moved inside MX loop for better accuracy
+            smtp_ports = [587, 465, 25]
             
             for mx in mx_hosts:
                 server_key = f"{mx}"
-                
-                # Get optimal ports based on actual MX server
-                smtp_ports = self.get_optimal_port_for_mx(mx)
                 
                 # Check circuit breaker
                 if self.is_circuit_open(server_key):
@@ -282,7 +248,6 @@ class Scout:
                             if smtp_port != 465 and server.has_extn('starttls'):
                                 try:
                                     server.starttls()
-                                    server.ehlo("blu-harvest.com")  # Re-EHLO after STARTTLS
                                 except Exception:
                                     pass  # Continue without STARTTLS
                             
@@ -499,7 +464,7 @@ class Scout:
                     progress_callback(progress, len(batch_results), len(results))
                 
                 # Small delay to prevent overwhelming servers
-                pass  # No delay between batches
+                time.sleep(0.05)
         
         return results
 
