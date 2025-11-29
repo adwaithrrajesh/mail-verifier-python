@@ -20,6 +20,8 @@ from typing import Dict, Any, List
 import os
 import socket
 import threading
+from mailscout.middleware.jwt_middleware import internal_token_required
+
 
 app = Flask(__name__)
 scout = Scout(
@@ -102,6 +104,7 @@ def home():
 
 @app.route("/verify", methods=["POST"])
 @rate_limit
+@internal_token_required
 def verify_email():
     data = request.get_json(silent=True)
     is_valid, error = validate_request_data(data or {}, ["email"])
@@ -145,6 +148,7 @@ def verify_email():
 
 @app.route("/verify-bulk", methods=["POST"])
 @rate_limit
+@internal_token_required
 def verify_emails_bulk():
     """High-performance bulk email verification endpoint"""
     data = request.get_json(silent=True)
@@ -233,6 +237,7 @@ def get_stats():
 
 @app.route("/find", methods=["POST"])
 @rate_limit
+@internal_token_required
 def find_emails():
     try:
         data = request.get_json(silent=True)
