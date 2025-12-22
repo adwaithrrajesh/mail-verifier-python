@@ -42,7 +42,7 @@ class Scout:
         self,
         check_variants: bool = True,
         check_prefixes: bool = True,
-        check_catchall: bool = False,
+        check_catchall: bool = True,  # Enabled by default to detect catch-all domains
         normalize: bool = True,
         num_threads: int = 50,  # Optimized for 5GB RAM
         num_bulk_threads: int = 25,  # Optimized for 5GB RAM
@@ -50,7 +50,8 @@ class Scout:
         batch_size: int = 100,  # Larger batches for better throughput
         connection_pool_size: int = 50,  # Larger pool for 5GB RAM
         max_retries: int = 1,  # Retry failed connections
-        retry_delay: float = 1.0  # Base retry delay
+        retry_delay: float = 1.0,  # Base retry delay
+        catchall_test_emails: int = 3  # Number of fake emails to test for catch-all detection
     ) -> None:
         self.check_variants = check_variants
         self.check_prefixes = check_prefixes
@@ -63,9 +64,11 @@ class Scout:
         self.max_retries = max_retries
         self.retry_delay = retry_delay
         self.connection_pool_size = connection_pool_size
+        self.catchall_test_emails = catchall_test_emails
         
         # Performance optimization attributes
         self.mx_cache = {}  # DNS cache for MX records
+        self.catchall_cache = {}  # Cache for catch-all detection results
         self.cache_lock = threading.Lock()  # Thread-safe cache access
         self.connection_pool = queue.Queue(maxsize=connection_pool_size)
         self.pool_lock = threading.Lock()
@@ -295,10 +298,14 @@ class Scout:
 
                             # Process response
                             if code == 250:
+                                catch_all_result = {'is_catchall': False, 'confidence': 0.0}
                                 if self.check_catchall:
-                                    catch_all_flag = self.is_catch_all(domain, mx)
+                                    catch_all_result = self.is_catch_all(domain, mx)
+                                
+                                catch_all_flag = catch_all_result['is_catchall']
+                                catch_all_confidence = catch_all_result['confidence']
                                 status = "risky" if catch_all_flag else "valid"
-                                msg = "Catch-All" if catch_all_flag else f"{code} {message.decode()}"
+                                msg = f"Catch-All (confidence: {catch_all_confidence})" if catch_all_flag else f"{code} {message.decode()}"
                                 
                                 # Return connection to pool
                                 self.return_connection_to_pool(mx, smtp_port, server)
@@ -308,6 +315,7 @@ class Scout:
                                     "email": email,
                                     "status": status,
                                     "catch_all": catch_all_flag,
+                                    "catch_all_confidence": catch_all_confidence,
                                     "message": msg,
                                     "user_name": email.split('@')[0].replace('.', ' ').title(),
                                     "domain": domain,
@@ -332,6 +340,7 @@ class Scout:
                                         "email": email,
                                         "status": status,
                                         "catch_all": catch_all_flag,
+                                        "catch_all_confidence": 0.0,
                                         "message": msg,
                                         "user_name": email.split('@')[0].replace('.', ' ').title(),
                                         "domain": domain,
@@ -351,6 +360,7 @@ class Scout:
                                     "email": email,
                                     "status": status,
                                     "catch_all": catch_all_flag,
+                                    "catch_all_confidence": 0.0,
                                     "message": msg,
                                     "user_name": email.split('@')[0].replace('.', ' ').title(),
                                     "domain": domain,
@@ -426,6 +436,7 @@ class Scout:
             "email": email,
             "status": "unknown",
             "catch_all": False,
+            "catch_all_confidence": 0.0,
             "message": message,
             "user_name": email.split('@')[0].replace('.', ' ').title(),
             "domain": domain,
@@ -435,12 +446,27 @@ class Scout:
             "time_exec": time_exec
         }
 
-    def is_catch_all(self, domain: str, mx_record: str) -> bool:
-        fake_user = ''.join(random.choices(string.ascii_lowercase, k=12))
-        fake_email = f"{fake_user}@{domain}"
-
+    def is_catch_all(self, domain: str, mx_record: str) -> Dict[str, Union[bool, float]]:
+        """
+        Enhanced catch-all detection with multi-email testing and confidence scoring.
+        Tests multiple random fake emails to increase accuracy.
+        Returns dict with 'is_catchall' (bool) and 'confidence' (0.0-1.0)
+        """
+        # Check cache first
+        with self.cache_lock:
+            if domain in self.catchall_cache:
+                return self.catchall_cache[domain]
+        
+        # Generate multiple fake emails for testing
+        fake_emails = [
+            f"{''.join(random.choices(string.ascii_lowercase + string.digits, k=15))}@{domain}"
+            for _ in range(self.catchall_test_emails)
+        ]
+        
         # Try multiple SMTP ports in case port 25 is blocked
         smtp_ports = [25, 587, 465]
+        accepted_count = 0
+        tested_count = 0
         
         for smtp_port in smtp_ports:
             try:
@@ -459,13 +485,42 @@ class Scout:
                             smtp_server.ehlo("blu-harvest.com")
                         except Exception:
                             pass
+                    
                     smtp_server.mail("noreply@blu-harvest.com")
-                    code, _ = smtp_server.rcpt(fake_email)
-                    return code == 250
+                    
+                    # Test all fake emails
+                    for fake_email in fake_emails:
+                        try:
+                            code, _ = smtp_server.rcpt(fake_email)
+                            tested_count += 1
+                            if code == 250:
+                                accepted_count += 1
+                        except Exception:
+                            continue
+                    
+                    # If we successfully tested emails, break out of port loop
+                    if tested_count > 0:
+                        break
+                        
             except Exception:
                 continue  # Try next port
         
-        return False  # All ports failed
+        # Calculate confidence and determine if catch-all
+        # If 2 or more out of 3 fake emails are accepted, it's likely catch-all
+        if tested_count == 0:
+            # Couldn't test any emails, return unknown
+            result = {'is_catchall': False, 'confidence': 0.0}
+        else:
+            acceptance_ratio = accepted_count / tested_count
+            is_catchall = acceptance_ratio >= 0.67  # 67% threshold (2 out of 3)
+            confidence = acceptance_ratio if is_catchall else (1.0 - acceptance_ratio)
+            result = {'is_catchall': is_catchall, 'confidence': round(confidence, 2)}
+        
+        # Cache the result
+        with self.cache_lock:
+            self.catchall_cache[domain] = result
+        
+        return result
 
     def verify_emails_bulk_optimized(self, emails: List[str], progress_callback=None) -> List[Dict]:
         """
@@ -624,6 +679,7 @@ class Scout:
             "email": None,
             "status": "invalid",
             "catch_all": False,
+            "catch_all_confidence": 0.0,
             "message": "No valid email found",
             "user_name": "",
             "domain": domain,
