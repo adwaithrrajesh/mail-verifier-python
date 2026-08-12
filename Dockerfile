@@ -1,41 +1,56 @@
-# Use Python 3.13 slim image for better performance
 FROM python:3.13-slim
 
-# Set working directory
 WORKDIR /app
 
-# Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PYTHONPATH=/app
+    PYTHONPATH=/app \
+    PIP_NO_CACHE_DIR=1
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    gcc \
-    g++ \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
+# System dependencies
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        gcc \
+        g++ \
+        curl && \
+    rm -rf /var/lib/apt/lists/*
 
-# Copy requirements first for better Docker layer caching
+# Install Python dependencies first for better layer caching
 COPY requirements.txt .
 
-# Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt && \
+    pip install --no-cache-dir gunicorn
 
-# Copy application code
+# Copy application
 COPY . .
 
-# Create non-root user for security
-RUN useradd --create-home --shell /bin/bash app \
-    && chown -R app:app /app
+# Create non-root user
+RUN useradd \
+        --create-home \
+        --shell /bin/bash \
+        app && \
+    chown -R app:app /app
+
 USER app
 
-# Expose port
 EXPOSE 9080
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD curl -fsS http://127.0.0.1:9080/ > /dev/null || exit 1
+# Container healthcheck
+HEALTHCHECK \
+    --interval=30s \
+    --timeout=10s \
+    --start-period=20s \
+    --retries=3 \
+    CMD curl -fsS http://127.0.0.1:9080/ > /dev/null || exit 1
 
-# Run the application
-CMD ["python", "-m", "mailscout.app"]
+# Production WSGI server
+CMD [
+    "gunicorn",
+    "--bind", "0.0.0.0:9080",
+    "--workers", "2",
+    "--threads", "4",
+    "--timeout", "120",
+    "--access-logfile", "-",
+    "--error-logfile", "-",
+    "mailscout.app:app"
+]
