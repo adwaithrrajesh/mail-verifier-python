@@ -15,9 +15,10 @@ RUN apt-get update && \
         curl && \
     rm -rf /var/lib/apt/lists/*
 
-# Install Python dependencies first for better layer caching
+# Copy requirements first for Docker layer caching
 COPY requirements.txt .
 
+# Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt && \
     pip install --no-cache-dir gunicorn
 
@@ -25,10 +26,7 @@ RUN pip install --no-cache-dir -r requirements.txt && \
 COPY . .
 
 # Create non-root user
-RUN useradd \
-        --create-home \
-        --shell /bin/bash \
-        app && \
+RUN useradd --create-home --shell /bin/bash app && \
     chown -R app:app /app
 
 USER app
@@ -36,21 +34,8 @@ USER app
 EXPOSE 9080
 
 # Container healthcheck
-HEALTHCHECK \
-    --interval=30s \
-    --timeout=10s \
-    --start-period=20s \
-    --retries=3 \
+HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \
     CMD curl -fsS http://127.0.0.1:9080/ > /dev/null || exit 1
 
 # Production WSGI server
-CMD [
-    "gunicorn",
-    "--bind", "0.0.0.0:9080",
-    "--workers", "2",
-    "--threads", "4",
-    "--timeout", "120",
-    "--access-logfile", "-",
-    "--error-logfile", "-",
-    "mailscout.app:app"
-]
+CMD ["gunicorn", "--bind", "0.0.0.0:9080", "--workers", "2", "--threads", "4", "--timeout", "120", "--access-logfile", "-", "--error-logfile", "-", "mailscout.app:app"]
